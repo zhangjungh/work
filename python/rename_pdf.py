@@ -119,6 +119,7 @@ def pdf_gettext(fp):
 	return first, last
 	
 def html_textparser(filename, list):
+	'''
 	lefttop = re.compile(r'left:(\d+)px; top:(\d+)px; width:(\d+)px;.*?>(.*?)($|<div)')
 	fontsize = re.compile(r'font-size:(\d+)px">(.*?)($|<)')
 	with open(filename, 'rt') as f:
@@ -136,28 +137,36 @@ def html_textparser(filename, list):
 							left = int(float(d[2])*tcur/tlen) + int(d[0])
 							tcur += len(m[1])
 						list.append( (t, int(m[0]), left, int(d[1])) )
+	'''
+	div = re.compile(r'<div.*?left:(\d+)px; top:(\d+)px; width:(\d+)px;.*?>(.*?)</div>', re.DOTALL)
+	span = re.compile(r'<span.*?font-size:(\d+)px">(.*?)</span>', re.DOTALL)
+	with open(filename, 'rt') as f:
+		for d in div.findall(f.read()):
+			mg = span.findall(d[3])
+			tlen = sum([len(m[1]) for m in mg]) if len(mg) > 1 else -1
+			tcur = 0
+			for m in mg:
+				t = m[1].replace('\n<br>', ' ').strip()
+				if t != '':
+					left = int(d[0])
+					if tlen != -1: 
+						left = int(float(d[2])*tcur/tlen) + int(d[0])
+						tcur += len(m[1])
+					list.append( (t, int(m[0]), left, int(d[1])) )
 
 def pdf_process(fp):
 	first, last = pdf_gettext(fp)	
 	if is_NEJM(first):
 		return NEJM_process(first, last)
+	elif is_Spine(first):
+		return Spine_process(first)
 	else:
 		global g_count
 		g_count += 1
 		return 'FFFF-LLL.TITLE[Failed-%d].pdf' % g_count
-	
-def is_NEJM(list):
-	pattern = [[0, 'new england journal'], [0, 'new  england  journal'], [0, 'www.nejm.org'], [0, 'n engl j med']]
-	for p in list:
-		for i in pattern:
-			if p[0].lower().find(i[1]) != -1:
-				#print (p)
-				i[0] = 1
-	return sum([i[0] for i in pattern]) >= 1
-	
-def NEJM_process(first, last):
-	#get the title
-	l = sorted(first, key=lambda list : list[1], reverse=True)
+
+def text_gettitle(list):
+	l = sorted(list, key=lambda l : l[1], reverse=True)
 	title = 'no-title'
 	for i in l:
 		w = i[0].split(' ')
@@ -166,23 +175,15 @@ def NEJM_process(first, last):
 			break
 			
 	index = -1
-	for i in range(len(first)):
+	for i in range(len(list)):
 		if index != -1:
-			if first[i][1] != first[index][1]:
+			if list[i][1] != list[index][1]:
 				break
-			title += ' ' + first[i][0]
-		if index == -1 and title == first[i][0]:
+			title += ' ' + list[i][0]
+		if index == -1 and title == list[i][0]:
 			index = i
-	
-	#get the first pagenum
-	start = text_getnum(first)
-	
-	#get the last pagenum
-	end = text_getnum(last)
-	end = end.zfill(3)
-	
-	return '%s-%s.%s.pdf'%(start.zfill(4), end[ len(end)-3:len(end) ], title)
-	
+	return title
+			
 def text_getnum(list):
 	l = sorted(list, key=lambda l : l[3], reverse=True)
 	lc, top, num = [], -1, '0000'
@@ -198,6 +199,49 @@ def text_getnum(list):
 			edge = abs(i[2]-300)
 			num = i[0]			
 	return num
-			
+		
+def is_NEJM(list):
+	pattern = [[0, 'new england journal'], [0, 'new  england  journal'], [0, 'www.nejm.org'], [0, 'n engl j med']]
+	for p in list:
+		for i in pattern:
+			if p[0].lower().find(i[1]) != -1:
+				#print (p)
+				i[0] = 1
+	return sum([i[0] for i in pattern]) >= 1
+	
+def NEJM_process(first, last):
+	#get the title
+	title = text_gettitle(first)
+	
+	#get the first pagenum
+	start = text_getnum(first).zfill(4)
+	
+	#get the last pagenum
+	end = text_getnum(last).zfill(3)
+	
+	return '%s-%s.%s.pdf'%(start, end[ len(end)-3:len(end) ], title)
+
+def is_Spine(list):
+	pattern = 'the spine journal'
+	for p in list:
+		if p[0].lower().find(pattern) != -1:
+			return True
+	return False
+
+def Spine_process(first):
+	title = text_gettitle(first)
+	
+	digit = re.compile(r'(\d+)')
+	start, end = '0000', '000'
+	pattern = 'the spine journal'
+	for p in first:
+		if p[0].lower().find(pattern) != -1:
+			mg = digit.findall(p[0])
+			if len(mg) >= 2:
+				start, end = mg[-2].zfill(4), mg[-1].zfill(3)
+			break
+	
+	return '%s-%s.%s.pdf'%(start, end[ len(end)-3:len(end) ], title)
+	
 if __name__ == '__main__':
 	main(sys.argv)
