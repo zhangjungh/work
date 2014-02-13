@@ -26,26 +26,57 @@ headers = {
 def login():
 	pass
 
+import random	
+def rand5():
+	return random.randint(1, 5);
+
+def rand7():
+	sum = rand5() + rand5() // 2
+		
+	return sum
+	
+def rand7_s():
+	a = [rand5(), rand5()+1, rand5()+2, rand5(), rand5()+1]
+	return a[rand5()-1]
+	
 if __name__ == '__main__':
-	h = httplib2.Http('.cache')
+	#h = httplib2.Http('.cache')
 	#get cookie
-	r, c = h.request(baidu, headers=headers)
-	cs = charset.search(r['content-type']).group(1)
-	print(cs)
+	#r, c = h.request(baidu, headers=headers)
+	#cs = charset.search(r['content-type']).group(1)
+	#print(cs)
 	#print(c.decode(cs))
 	
 	
 	#post
-	h.add_credentials('name', 'password')
+	#h.add_credentials('name', 'password')
 
 	
 	#refresh
-	resp, content = h.request("http://bitworking.org/", 
-    headers={'cache-control':'no-cache'})
+	#resp, content = h.request("http://bitworking.org/", 
+    #headers={'cache-control':'no-cache'})
 	
 	#buy
+	r = [0, 0, 0, 0, 0]
+	for i in range(100000):
+		r[rand5()-1] += 1
 	
+	r = [i/100000 for i in r]
+	print(r)
 	
+	r = [0, 0, 0, 0, 0, 0, 0]
+	for i in range(100000):
+		r[rand7()-1] += 1
+	
+	r = [i/100000 for i in r]	
+	print(r)
+
+	r = [0, 0, 0, 0, 0, 0, 0]
+	for i in range(100000):
+		r[rand7_s()-1] += 1
+	
+	r = [i/100000 for i in r]	
+	print(r)	
 	#image
 	
 	

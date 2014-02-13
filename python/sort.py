@@ -4,7 +4,8 @@ import os
 import sys
 import random
 
-g_array = [1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 9, 10]
+#g_array = [1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 9, 10]
+g_array = [8, 1, 5, 10, 13, 15, 4, 7, 2, 9, 5]
 
 ####################################################
 def bubble_sort(arr):
@@ -24,6 +25,7 @@ def insert_sort(arr):
 		while j>=0 and arr[j]>key:
 			arr[j+1] = arr[j]
 			j = j-1
+			#print(arr)
 		arr[j+1] = key
 		print(arr)
 		print('------------------------------------')
@@ -32,7 +34,9 @@ def insert_sort(arr):
 def merge_sort(arr, p, r):
 	if p < r:
 		q = (p+r) // 2
+		print(arr[p:q+1])
 		merge_sort(arr, p, q)
+		print(arr[q+1:r+1])
 		merge_sort(arr, q+1, r)
 		merge(arr, p, q, r)
 
@@ -83,6 +87,7 @@ def heapify(arr, n, length):
 def quick_sort(arr, p, r):
 	if p < r:
 		q = portion(arr, p, r)
+		print(q, arr[q])
 		quick_sort(arr, p, q-1)
 		quick_sort(arr, q+1, r)
 	#print(arr)
@@ -95,8 +100,8 @@ def portion(arr, p, r):
 			i = i+1
 			arr[i], arr[j] = arr[j], arr[i]
 	arr[i+1], arr[r] = arr[r], arr[i+1]
-	print(arr[p:r+1])
-	print(arr)
+	print('protion', arr[p:r+1])
+	print('full', arr)
 	return i+1
 
 ####################################################	
@@ -117,4 +122,5 @@ if __name__ == '__main__':
 	#merge_sort(g_array, 0, len(g_array)-1)
 	#heap_sort(g_array)
 	quick_sort(g_array, 0, len(g_array)-1)
-	print(fib(100))
+	print(g_array)
+	#print(fib(100))
