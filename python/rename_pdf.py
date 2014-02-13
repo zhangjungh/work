@@ -3,6 +3,7 @@
 import sys
 import os
 import re
+import shutil
 from pdfminer.pdfdocument import PDFDocument
 from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
@@ -40,7 +41,7 @@ def main(argv):
 				with open(path, 'rb') as f:
 					outfile = pdf_process(f)
 					print('copy from %s to %s' % (file, outfile))
-					os.system ('copy "%s" "%s"' % (path, os.path.join(odir, outfile)))
+					shutil.copy(path, os.path.join(odir, outfile).decode('utf-8'))
 
 def pdf_gettext(fp):
 	# debug option
@@ -152,19 +153,15 @@ def is_NEJM(list):
 			if p[0].lower().find(i[1]) != -1:
 				#print (p)
 				i[0] = 1
-	return sum([i[0] for i in pattern]) >= 2
+	return sum([i[0] for i in pattern]) >= 1
 	
 def NEJM_process(first, last):
 	#get the title
 	l = sorted(first, key=lambda list : list[1], reverse=True)
 	title = 'no-title'
 	for i in l:
-		find = False
-		for c in i[0].split(' '):
-			if len(c) >= 2:
-				find = True
-				break
-		if find:
+		w = i[0].split(' ')
+		if len(w) > 2 and filter(lambda c:len(c) >= 2, w) != []:
 			title = i[0]
 			break
 			
