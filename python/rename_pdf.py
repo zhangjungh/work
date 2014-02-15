@@ -37,6 +37,7 @@ def main(argv):
 		folder_process(idir, odir)
 
 def folder_process(idir, odir, reserve=False):
+	names = []
 	if not os.path.exists(odir):
 		print('create output dir: %s' % odir)
 		os.makedirs(odir)
@@ -46,10 +47,12 @@ def folder_process(idir, odir, reserve=False):
 				try:
 					path = os.path.join(root, file)
 					outfile = pdf_process(path, reserve)
+					names.append(outfile)
 					print('copy from %s to %s' % (file, outfile))
 					shutil.copy(path, os.path.join(odir, outfile).decode('utf-8'))				
 				except Exception, e:
-					print('error: %s -> %s' % (file, str(e)))	
+					print('error: %s -> %s' % (file, str(e)))
+	return names
 
 def pdf_gettext(filepath, reserve):
 	# debug option
@@ -77,9 +80,10 @@ def pdf_gettext(filepath, reserve):
 	if reserve:
 		firstout = filepath[:-3] + firstout
 		lastout = filepath[:-3] + lastout
-		if os.path.exists(firstout) and os.path.exists(lastout):					
+		if os.path.exists(firstout):					
 			html_textparser(firstout, first)
-			html_textparser(lastout, last)
+			if os.path.exists(lastout):
+				html_textparser(lastout, last)
 			return first, last
 	#
 	PDFDocument.debug = debug
@@ -118,45 +122,24 @@ def pdf_gettext(filepath, reserve):
 			else:
 				lastpage = page
 		
-		if not lastpage:
-			raise Exception, 'only one page, disregarded'
-			
-		interpreter.process_page(firstpage)
-		with open(firstout, 'w') as f:
-			f.write(outfp.getvalue())
-		outfp.truncate(0)
-		interpreter.process_page(lastpage)
-		with open(lastout, 'w') as f:
-			f.write(outfp.getvalue())
+		if firstpage:
+			interpreter.process_page(firstpage)
+			with open(firstout, 'w') as f:
+				f.write(outfp.getvalue())			
+			html_textparser(firstout, first)
+		if lastpage:
+			outfp.truncate(0)
+			interpreter.process_page(lastpage)
+			with open(lastout, 'w') as f:
+				f.write(outfp.getvalue())
+			html_textparser(lastout, last)
 		
 	device.close()	
 	outfp.close()
-	
-	html_textparser(firstout, first)
-	html_textparser(lastout, last)
 
 	return first, last
 	
 def html_textparser(filename, list):
-	'''
-	lefttop = re.compile(r'left:(\d+)px; top:(\d+)px; width:(\d+)px;.*?>(.*?)($|<div)')
-	fontsize = re.compile(r'font-size:(\d+)px">(.*?)($|<)')
-	with open(filename, 'rt') as f:
-		for line in f:
-			dg = lefttop.findall(line)
-			for d in dg:
-				mg = fontsize.findall(d[3])
-				tlen = sum([len(m[1]) for m in mg]) if len(mg) > 1 else -1
-				tcur = 0
-				for m in mg:
-					t = m[1].strip()
-					if t != '':
-						left = int(d[0])
-						if tlen != -1: 
-							left = int(float(d[2])*tcur/tlen) + int(d[0])
-							tcur += len(m[1])
-						list.append( (t, int(m[0]), left, int(d[1])) )
-	'''
 	div = re.compile(r'<div.*?left:(\d+)px; top:(\d+)px; width:(\d+)px;.*?>(.*?)</div>', re.DOTALL)
 	span = re.compile(r'<span.*?font-size:(\d+)px">(.*?)</span>', re.DOTALL)
 	with open(filename, 'rt') as f:
@@ -181,24 +164,28 @@ def pdf_process(filepath, reserve):
 		return Spine_process(first)
 	elif is_semss(first):
 		return semss_process(first, last)
+	elif is_clineuro(first):
+		return clineuro_process(first, last)
 	else:
 		global g_count
 		g_count += 1
 		return 'FFFF-LLL.TITLE[Failed-%d].pdf' % g_count
 
-def text_gettitle(list):
+def text_gettitle(list, h1=0, h2=900):
 	l = sorted(list, key=lambda l : l[1], reverse=True)
+	nf = ('Special Article', 'Review Article')
 	title = 'no-title'
 	for i in l:
-		w = i[0].split(' ')
-		if len(w) > 2 and filter(lambda c:len(c) >= 2, w) != []:
-			title = i[0]
-			break
-			
+		if i[3] >= h1 and i[3] <= h2 and i[0] not in nf:
+			w = i[0].split(' ')
+			if filter(lambda c:len(c) >= 2, w) != []:
+				title = i[0]
+				break
+				
 	t = None
 	for i, p in enumerate(list):
 		if t != None:
-			if t[1] != p[1]: break
+			if t[1] != p[1] or t[3]-p[3] > 20: break
 			title += ' ' + p[0]
 		if not t and title == p[0]:
 			t = p
@@ -293,17 +280,62 @@ def semss_process(first, last):
 		end = text_getnum(last, False).zfill(3)
 	
 	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+
+def is_clineuro(list):
+	pattern = 'j.clineuro'#[[0, 'Clinical Neurology and Neurosurgery'], [0, 'j.clineuro']]
+	for p in list:
+		if p[0].lower().find(pattern) != -1:
+			return True
+	return False	
+
+def clineuro_process(first, last):
+	pattern = 'c l i n e u r o'
+	h1, h2 = 0, 300
+	for p in first:
+		if p[0].find(pattern) != -1:
+			h1 = p[3]
+			break
+	title = text_gettitle(first, h1, h2)
+	if len(title) > 256: title = title[:32]
+
+	nc = []
+	digit = re.compile(r'(\d+)')
+	start, end = '0000', '000'
+	for p in first:
+		if p[3] < h1:
+			mg = digit.findall(p[0])
+			if mg: nc += mg
+	if len(nc) >= 2:
+		start, end = nc[-2].zfill(4), nc[-1].zfill(3)
+	
+	if start == '0000':
+		start = text_getnum(first, False).zfill(4)
+		end = text_getnum(last, False).zfill(3)
+		
+	return '%s-%s.%s.pdf'%(start, end[-3:], title)
 	
 def run_test():
+	names = []
 	path = r'C:\Users\jzhang\Downloads'
-	ret = False
-	if os.path.exists(path + r'\run_test'):
-		for i in '123':
+	test = path + r'\run_test'
+	if os.path.exists(test):
+		for i in '1234':
 			p = path + r'\input' + i
 			if os.path.exists(p):
-				ret = True
-				folder_process(p, p+'_O', True)
-	return ret
+				names += folder_process(p, p+'_O', True)
+		update = False
+		with open(test, 'rt') as f:
+			all = f.read()
+			for n in names:
+				if n not in all:
+					update = True
+					print('differ from last: ' + n)
+		if update:
+			with open(test, 'w+') as f:
+				for n in names:
+					f.write(n + '\n')
+		
+	return names != []
 	
 if __name__ == '__main__':
 	main(sys.argv)
