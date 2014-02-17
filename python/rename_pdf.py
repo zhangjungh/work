@@ -161,7 +161,7 @@ def pdf_process(filepath, reserve):
 	if is_NEJM(first):
 		return NEJM_process(first, last)
 	elif is_Spine(first):
-		return Spine_process(first)
+		return Spine_process(first, last)
 	elif is_semss(first):
 		return semss_process(first, last)
 	elif is_clineuro(first):
@@ -216,7 +216,7 @@ def is_NEJM(list):
 	pattern = [[0, 'new england journal'], [0, 'new  england  journal'], [0, 'www.nejm.org'], [0, 'n engl j med']]
 	for p in list:
 		for i in pattern:
-			if p[0].lower().find(i[1]) != -1:
+			if i[1] in p[0].lower():
 				return True
 	return False
 	
@@ -235,22 +235,24 @@ def NEJM_process(first, last):
 def is_Spine(list):
 	pattern = 'the spine journal'
 	for p in list:
-		if p[0].lower().find(pattern) != -1:
+		if pattern in p[0].lower():
 			return True
 	return False
 
-def Spine_process(first):
+def Spine_process(first, last):
 	title = text_gettitle(first)
 	
 	digit = re.compile(r'(\d+)')
 	start, end = '0000', '000'
 	pattern = 'the spine journal'
 	for p in first:
-		if p[0].lower().find(pattern) != -1:
+		if pattern in p[0].lower():
 			mg = digit.findall(p[0])
 			if len(mg) >= 2:
 				start, end = mg[-2].zfill(4), mg[-1].zfill(3)
 			break
+	
+	if not last: start = end.zfill(4)
 	
 	return '%s-%s.%s.pdf'%(start, end[-3:], title)
 
@@ -258,7 +260,7 @@ def is_semss(list):
 	pattern = [[0, 'seminars in spine surgery'], [0, 'j.semss']]
 	for p in list:
 		for i in pattern:
-			if p[0].lower().find(i[1]) != -1:
+			if i[1] in p[0].lower():
 				return True
 	return False
 	
@@ -269,7 +271,7 @@ def semss_process(first, last):
 	start, end = '0000', '000'
 	pattern = 'S E M I N A R S I N S P I N E S U R G E R Y'
 	for p in first:
-		if p[0].find(pattern) != -1:
+		if pattern in p[0]:
 			mg = digit.findall(p[0].translate(None, ' '))
 			if len(mg) >= 2:
 				start, end = mg[-2].zfill(4), mg[-1].zfill(3)
@@ -278,13 +280,15 @@ def semss_process(first, last):
 	if start == '0000':
 		start = text_getnum(first).zfill(4)	
 		end = text_getnum(last, False).zfill(3)
+		
+	if not last: end = start
 	
 	return '%s-%s.%s.pdf'%(start, end[-3:], title)
 
 def is_clineuro(list):
 	pattern = 'j.clineuro'#[[0, 'Clinical Neurology and Neurosurgery'], [0, 'j.clineuro']]
 	for p in list:
-		if p[0].lower().find(pattern) != -1:
+		if pattern in p[0].lower():
 			return True
 	return False	
 
@@ -292,7 +296,7 @@ def clineuro_process(first, last):
 	pattern = 'c l i n e u r o'
 	h1, h2 = 0, 300
 	for p in first:
-		if p[0].find(pattern) != -1:
+		if pattern in p[0]:
 			h1 = p[3]
 			break
 	title = text_gettitle(first, h1, h2)
