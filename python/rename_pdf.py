@@ -49,7 +49,9 @@ def folder_process(idir, odir, reserve=False):
 					outfile = pdf_process(path, reserve)
 					names.append(outfile)
 					print('copy from %s to %s' % (file, outfile))
-					shutil.copy(path, os.path.join(odir, outfile).decode('utf-8'))				
+					npath = os.path.join(odir, root[len(idir)+1:])
+					if not os.path.exists(npath): os.mkdir(npath)
+					shutil.copy(path, os.path.join(npath, outfile).decode('utf-8'))				
 				except Exception, e:
 					print('error: %s -> %s' % (file, str(e)))
 	return names
@@ -166,17 +168,18 @@ def pdf_process(filepath, reserve):
 		return semss_process(first, last)
 	elif is_clineuro(first):
 		return clineuro_process(first, last)
+	elif is_wneu(first):
+		return wneu_process(first, last)
 	else:
 		global g_count
 		g_count += 1
 		return 'FFFF-LLL.TITLE[Failed-%d].pdf' % g_count
 
-def text_gettitle(list, h1=0, h2=900):
+def text_gettitle(list, h1=0, h2=900, exclude=()):
 	l = sorted(list, key=lambda l : l[1], reverse=True)
-	nf = ('Special Article', 'Review Article')
 	title = 'no-title'
 	for i in l:
-		if i[3] >= h1 and i[3] <= h2 and i[0] not in nf:
+		if i[3] >= h1 and i[3] <= h2 and i[0] not in exclude:
 			w = i[0].split(' ')
 			if filter(lambda c:len(c) >= 2, w) != []:
 				title = i[0]
@@ -222,7 +225,7 @@ def is_NEJM(list):
 	
 def NEJM_process(first, last):
 	#get the title
-	title = text_gettitle(first)
+	title = text_gettitle(first, exclude=('Special Article', 'Review Article'))
 	
 	#get the first pagenum
 	start = text_getnum(first).zfill(4)
@@ -317,13 +320,35 @@ def clineuro_process(first, last):
 		end = text_getnum(last, False).zfill(3)
 		
 	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+
+def is_wneu(list):
+	pattern = 'j.wneu'
+	for p in list:
+		if pattern in p[0].lower():
+			return True
+	return False
+
+def wneu_process(first, last):
+	title = text_gettitle(first, exclude=('Perspectives', 'Peer-Review Reports', 'Education &amp; Training'))	
+	if len(title) > 200: title = title[:32]
+	
+	digit = re.compile(r':e?(\d+).*?(\d+)[.]')
+	start, end = '0000', '000'
+	pattern = 'World Neurosurg'
+	nc = []
+	for p in first:
+		if pattern in p[0]:
+			mg = digit.search(p[0])
+			if mg: start, end = mg.group(1).zfill(4), mg.group(2).zfill(3)
+			break
+	return '%s-%s.%s.pdf'%(start, end[-3:], title)
 	
 def run_test():
 	names = []
 	path = r'C:\Users\jzhang\Downloads'
 	test = path + r'\run_test'
 	if os.path.exists(test):
-		for i in '1234':
+		for i in '5':
 			p = path + r'\input' + i
 			if os.path.exists(p):
 				names += folder_process(p, p+'_O', True)
