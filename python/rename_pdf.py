@@ -47,6 +47,7 @@ def folder_process(idir, odir, reserve=False):
 				try:
 					path = os.path.join(root, file)
 					outfile = pdf_process(path, reserve)
+					if len(outfile) > 255: outfile = outfile[:64]+'.pdf'
 					names.append(outfile)
 					print('copy from %s to %s' % (file, outfile))
 					npath = os.path.join(odir, root[len(idir)+1:])
@@ -170,6 +171,8 @@ def pdf_process(filepath, reserve):
 		return clineuro_process(first, last)
 	elif is_wneu(first):
 		return wneu_process(first, last)
+	elif is_lancet(first):
+		return lancet_process(first, last)
 	else:
 		global g_count
 		g_count += 1
@@ -216,7 +219,7 @@ def text_getnum(list, footer=True):
 	return num
 	
 def is_NEJM(list):
-	pattern = [[0, 'new england journal'], [0, 'new  england  journal'], [0, 'www.nejm.org'], [0, 'n engl j med']]
+	pattern = [[0, 'new england journal'], [0, 'www.nejm.org']]
 	for p in list:
 		for i in pattern:
 			if i[1] in p[0].lower():
@@ -303,7 +306,6 @@ def clineuro_process(first, last):
 			h1 = p[3]
 			break
 	title = text_gettitle(first, h1, h2)
-	if len(title) > 256: title = title[:32]
 
 	nc = []
 	digit = re.compile(r'(\d+)')
@@ -329,8 +331,7 @@ def is_wneu(list):
 	return False
 
 def wneu_process(first, last):
-	title = text_gettitle(first, exclude=('Perspectives', 'Peer-Review Reports', 'Education &amp; Training'))	
-	if len(title) > 200: title = title[:32]
+	title = text_gettitle(first, exclude=('Perspectives', 'Peer-Review Reports', 'Education &amp; Training'))
 	
 	digit = re.compile(r':e?(\d+).*?(\d+)[.]')
 	start, end = '0000', '000'
@@ -343,12 +344,29 @@ def wneu_process(first, last):
 			break
 	return '%s-%s.%s.pdf'%(start, end[-3:], title)
 	
+def is_lancet(list):
+	pattern = [[0, 'the lancet'], [0, 'www.thelancet.com']]
+	for p in list:
+		for i in pattern:
+			if i[1] in p[0].lower():
+				return True
+	return False
+
+def lancet_process(first, last):
+	title = text_gettitle(first, exclude=('CORRESPONDENCE'))
+	
+	start = text_getnum(first).zfill(4)
+	
+	end = text_getnum(last).zfill(3)
+
+	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	
 def run_test():
 	names = []
 	path = r'C:\Users\jzhang\Downloads'
 	test = path + r'\run_test'
 	if os.path.exists(test):
-		for i in '5':
+		for i in '123456':
 			p = path + r'\input' + i
 			if os.path.exists(p):
 				names += folder_process(p, p+'_O', True)
