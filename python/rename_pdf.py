@@ -41,7 +41,7 @@ def folder_process(idir, odir, reserve=False):
 	if not os.path.exists(odir):
 		print('create output dir: %s' % odir)
 		os.makedirs(odir)
-	for root, dirs, files in os.walk(idir):
+	for root, dirs, files in os.walk(idir.decode('utf-8')):
 		for file in files:
 			if file.lower().endswith('.pdf'):
 				try:
@@ -49,10 +49,10 @@ def folder_process(idir, odir, reserve=False):
 					outfile = pdf_process(path, reserve)
 					if len(outfile) > 255: outfile = outfile[:64]+'.pdf'
 					names.append(outfile)
-					print('copy from %s to %s' % (file, outfile))
+					print('copy from %s to %s' % (file.encode('utf-8'), outfile))
 					npath = os.path.join(odir, root[len(idir)+1:])
 					if not os.path.exists(npath): os.mkdir(npath)
-					shutil.copy(path, os.path.join(npath, outfile).decode('utf-8'))				
+					shutil.copy(path, os.path.join(npath, outfile).decode('utf-8'))
 				except Exception, e:
 					print('error: %s -> %s' % (file, str(e)))
 	return names
@@ -159,7 +159,7 @@ def html_textparser(filename, list):
 					if tlen != -1: 
 						left = int(float(d[2])*tcur/tlen) + int(d[0])
 						tcur += len(m[1])
-					if len(t) == 1:	tcap = not t.islower()						
+					if len(t) == 1:	tcap = t.isalpha() and not t.islower()						
 					elif tcap:
 						update = tcap = lowc.search(t) == None
 					if update:
@@ -198,21 +198,22 @@ def pdf_process(filepath, reserve):
 		print('treat as general')
 		return general_process(first, last)
 
-def text_gettitle(list, h1=0, h2=900, exclude=()):
+def text_gettitle(list, h1=0, h2=900, exclude=(), ss=None):
 	l = sorted(list, key=lambda l : l[1], reverse=True)
 	title = 'no-title'
 	for i in l:
-		if i[3] >= h1 and i[3] <= h2 and i[0] not in exclude:
+		if i[3] >= h1 and i[3] <= h2 and i[0] not in exclude and (not ss or ss not in i[0]):
 			w = i[0].split(' ')
 			if filter(lambda c:len(c) >= 2, w) != []:
 				title = i[0]
 				break
 				
 	t = None
-	for i, p in enumerate(list):
+	for p in list:
 		if t != None:
 			if t[1] != p[1] or t[3]-p[3] > 20: break
-			title += ' ' + p[0]
+			if not ss or ss not in p[0]:
+				title += ' ' + p[0]
 		if not t and title == p[0]:
 			t = p
 	
@@ -279,19 +280,23 @@ def is_Spine(list):
 	return False
 
 def Spine_process(first, last):
-	title = text_gettitle(first)
+	title = text_gettitle(first, exclude=('\xc3\x93', '\xc3\xbe'), ss='The Spine Journal')
 	
 	digit = re.compile(r'(\d+)')
 	start, end = 'FFFF', 'LLL'
 	pattern = 'The Spine Journal'
 	for p in first:
 		if pattern in p[0]:
+			print(p[0])
 			mg = digit.findall(p[0])
-			if len(mg) >= 2:
+			if len(mg) >= 4:
 				start, end = mg[-2].zfill(4), mg[-1].zfill(3)
+			elif len(mg) == 3: 
+				start = mg[-1].zfill(4)
 			break
 	
 	if not last: start = end.zfill(4)
+	elif end == 'LLL': end = text_getnum(last, end, False).zfill(3)
 	
 	return '%s-%s.%s.pdf'%(start, end[-3:], title)
 
@@ -313,7 +318,7 @@ def semss_process(first, last):
 	for p in first:
 		if pattern in p[0]:
 			mg = digit.findall(p[0].translate(None, ' '))
-			if len(mg) >= 2:
+			if len(mg) >= 4:
 				start, end = mg[-2].zfill(4), mg[-1].zfill(3)
 			break
 	
@@ -523,7 +528,7 @@ def run_test():
 	path = r'C:\Users\jzhang\Downloads'
 	test = path + r'\run_test'
 	if os.path.exists(test):
-		for i in range(1, 15):
+		for i in range(1, 2):
 			p = path + r'\input' + str(i)
 			if os.path.exists(p):
 				names += folder_process(p, p+'_O', True)
