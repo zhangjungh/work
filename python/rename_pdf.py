@@ -180,6 +180,8 @@ def pdf_process(filepath, reserve):
 		return clineuro_process(first, last)
 	elif is_wneu(first):
 		return wneu_process(first, last)
+	elif is_neurosurgery(first):
+		return neurosurgery_process(first, last)
 	elif is_lancet(first):
 		return lancet_process(first, last)
 	elif is_ncna(first):
@@ -188,8 +190,6 @@ def pdf_process(filepath, reserve):
 		return neurosurg_process(first, last)
 	elif is_cn(first):
 		return cn_process(first, last)
-	elif is_neurosurgery(first):
-		return neurosurgery_process(first, last)
 	elif is_nf(first):
 		return nf_process(first, last)
 	elif is_surg(first):
@@ -204,12 +204,12 @@ def text_gettitle(list, h1=0, h2=900, exclude=(), ss=None):
 	for i in l:
 		if i[3] >= h1 and i[3] <= h2 and i[0] not in exclude and (not ss or ss not in i[0]):
 			w = i[0].split(' ')
-			if filter(lambda c:len(c) >= 2, w) != []:
+			if [c for c in w if len(c) >= 4]:
 				title = i[0]
 				break
 				
 	t = None
-	for p in list:
+	for p in l:
 		if t != None:
 			if t[1] != p[1] or t[3]-p[3] > 20: break
 			if not ss or ss not in p[0]:
@@ -463,15 +463,15 @@ def cn_process(first, last):
 	
 def is_neurosurgery(list):
 	pattern = 'neurosurgery-online'
-	ptstart = 'Neurosurgery'
+	ptstart = 'neurosurgery'
 	for p in list:
-		if pattern in p[0] or p[0].startswith(ptstart):
+		if pattern in p[0] or p[0].lower().startswith(ptstart) or p[0] == 'Table of Contents by Topic':
 			print(pattern)
 			return True
 	return False
 	
 def neurosurgery_process(first, last):
-	title = text_gettitle(first, exclude=('TECHNIQUE ASSESSMENTS', 'OPERATIVE NUANCES'))
+	title = text_gettitle(first, exclude=('TECHNIQUE ASSESSMENTS', 'OPERATIVE NUANCES', 'SCIENCE TIMES'))
 	
 	digit = re.compile(r'Neurosurgery.*?:.*?(\d+).*?(\d+),')
 	start, end = 'FFFF', 'LLL'
@@ -480,6 +480,22 @@ def neurosurgery_process(first, last):
 		if mg: 
 			start, end = mg.group(1).zfill(4), mg.group(2).zfill(3)
 			break
+	
+	def nedigit(list):
+		ne = re.compile(r'[N|E](\d+)')
+		for p in sorted(list, key=lambda l : l[3], reverse=True):
+			mg = ne.search(p[0])
+			if mg: return mg.group(1).zfill(4)
+		return None
+		
+	if start == 'FFFF':
+		start = nedigit(first)
+		if last: end = nedigit(last)
+		if not start:
+			start = text_getnum(first, 'FFFF').zfill(4)
+			end = text_getnum(last, 'LLL').zfill(3)
+		
+	if not last: end = start
 	
 	return '%s-%s.%s.pdf'%(start, end[-3:], title)
 	
@@ -528,7 +544,7 @@ def run_test():
 	path = r'C:\Users\jzhang\Downloads'
 	test = path + r'\run_test'
 	if os.path.exists(test):
-		for i in range(1, 2):
+		for i in range(9, 10):
 			p = path + r'\input' + str(i)
 			if os.path.exists(p):
 				names += folder_process(p, p+'_O', True)
