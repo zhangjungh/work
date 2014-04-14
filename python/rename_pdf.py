@@ -211,7 +211,7 @@ def text_gettitle(list, h1=0, h2=900, exclude=(), ss=None):
 	t = None
 	for p in l:
 		if t != None:
-			if t[1] != p[1] or t[3]-p[3] > 20: break
+			if t[1] != p[1] or abs(t[3]-p[3]) > 20: break
 			if not ss or ss not in p[0]:
 				title += ' ' + p[0]
 		if not t and title == p[0]:
@@ -246,9 +246,9 @@ def general_process(first, last):
 		g_count += 1
 		return 'FFFF-LLL.TITLE[Failed-%d].pdf' % g_count
 	else:
-		start = text_getnum(first, 'FFFF').zfill(4)
-		end = text_getnum(last, 'LLL').zfill(3)
-		return '%s-%s.%s.pdf'%(start, end[-3:], title)
+		start = text_getnum(first, 'FFFF')
+		end = text_getnum(last, 'LLL')
+		return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 	
 def is_NEJM(list):
 	pattern = [[0, 'new england journal'], [0, 'www.nejm.org']]
@@ -264,12 +264,12 @@ def NEJM_process(first, last):
 	title = text_gettitle(first, exclude=('Special Article', 'Review Article', 'ABSTRACT'))
 	
 	#get the first pagenum
-	start = text_getnum(first, 'FFFF').zfill(4)
+	start = text_getnum(first, 'FFFF')
 	
 	#get the last pagenum
-	end = text_getnum(last, 'LLL').zfill(3)
+	end = text_getnum(last, 'LLL')
 	
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_Spine(list):
 	pattern = 'The Spine Journal'
@@ -290,15 +290,15 @@ def Spine_process(first, last):
 			print(p[0])
 			mg = digit.findall(p[0])
 			if len(mg) >= 4:
-				start, end = mg[-2].zfill(4), mg[-1].zfill(3)
+				start, end = mg[-2], mg[-1]
 			elif len(mg) == 3: 
-				start = mg[-1].zfill(4)
+				start = mg[-1]
 			break
 	
-	if not last: start = end.zfill(4)
-	elif end == 'LLL': end = text_getnum(last, end, False).zfill(3)
+	if not last: start = end
+	elif end == 'LLL': end = text_getnum(last, end, False)
 	
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_semss(list):
 	pattern = [[0, 'seminars in spine surgery'], [0, 'j.semss']]
@@ -319,16 +319,16 @@ def semss_process(first, last):
 		if pattern in p[0]:
 			mg = digit.findall(p[0].translate(None, ' '))
 			if len(mg) >= 4:
-				start, end = mg[-2].zfill(4), mg[-1].zfill(3)
+				start, end = mg[-2], mg[-1]
 			break
 	
 	if start == 'FFFF':
-		start = text_getnum(first, start).zfill(4)	
-		end = text_getnum(last, end, False).zfill(3)
+		start = text_getnum(first, start)
+		end = text_getnum(last, end, False)
 		
 	if not last: end = start
 	
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_clineuro(list):
 	pattern = 'j.clineuro'#[[0, 'Clinical Neurology and Neurosurgery'], [0, 'j.clineuro']]
@@ -355,13 +355,13 @@ def clineuro_process(first, last):
 			mg = digit.findall(p[0])
 			if mg: nc += mg
 	if len(nc) >= 2:
-		start, end = nc[-2].zfill(4), nc[-1].zfill(3)
+		start, end = nc[-2], nc[-1]
 	
 	if start == 'FFFF':
-		start = text_getnum(first, start, False).zfill(4)
-		end = text_getnum(last, end, False).zfill(3)
+		start = text_getnum(first, start, False)
+		end = text_getnum(last, end, False)
 		
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_wneu(list):
 	pattern = 'j.wneu'
@@ -382,9 +382,9 @@ def wneu_process(first, last):
 		if pattern in p[0]:
 			mg = digit.search(p[0])
 			if mg: 
-				start, end = mg.group(1).zfill(4), mg.group(2).zfill(3)
+				start, end = mg.group(1), mg.group(2)
 				break
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 	
 def is_lancet(list):
 	pattern = [[0, 'the lancet'], [0, 'www.thelancet.com']]
@@ -398,11 +398,11 @@ def is_lancet(list):
 def lancet_process(first, last):
 	title = text_gettitle(first, exclude=('CORRESPONDENCE'))
 	
-	start = text_getnum(first, 'FFFF').zfill(4)
+	start = text_getnum(first, 'FFFF')
 	
-	end = text_getnum(last, 'LLL').zfill(3)
+	end = text_getnum(last, 'LLL')
 
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_ncna(list):
 	pattern = 'Neurosurg Clin N Am'
@@ -422,10 +422,10 @@ def ncna_process(first, last):
 		if pattern in p[0]:
 			mg = digit.findall(p[0].translate(None, ' '))
 			if len(mg) >= 4:
-				start, end = mg[-2].zfill(4), mg[-1].zfill(3)
+				start, end = mg[-2], mg[-1]
 			break
 	
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_neurosurg(list):
 	pattern = 'J Neurosurg'
@@ -438,11 +438,11 @@ def is_neurosurg(list):
 def neurosurg_process(first, last):
 	title = text_gettitle(first)
 	
-	start = text_getnum(first, 'FFFF').zfill(4)
+	start = text_getnum(first, 'FFFF')
 	
-	end = text_getnum(last, 'LLL').zfill(3)
+	end = text_getnum(last, 'LLL')
 	
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_cn(list):
 	pattern = 'Clinical Neurosurgery'
@@ -455,11 +455,11 @@ def is_cn(list):
 def cn_process(first, last):
 	title = text_gettitle(first)
 	
-	start = text_getnum(first, 'FFFF').zfill(4)
+	start = text_getnum(first, 'FFFF')
 	
-	end = text_getnum(last, 'LLL').zfill(3)
+	end = text_getnum(last, 'LLL')
 	
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 	
 def is_neurosurgery(list):
 	pattern = 'neurosurgery-online'
@@ -478,26 +478,29 @@ def neurosurgery_process(first, last):
 	for p in first:
 		mg = digit.search(p[0])
 		if mg: 
-			start, end = mg.group(1).zfill(4), mg.group(2).zfill(3)
+			start, end = mg.group(1), mg.group(2)
 			break
 	
 	def nedigit(list):
-		ne = re.compile(r'[N|E](\d+)')
+		ne = re.compile(r'([N|E])(\d+)')
 		for p in sorted(list, key=lambda l : l[3], reverse=True):
 			mg = ne.search(p[0])
-			if mg: return mg.group(1).zfill(4)
-		return None
+			if mg: return mg.group(1), mg.group(2)
+		return None, None
 		
 	if start == 'FFFF':
-		start = nedigit(first)
-		if last: end = nedigit(last)
+		ss, start = nedigit(first)
+		_, end = nedigit(last)
 		if not start:
-			start = text_getnum(first, 'FFFF').zfill(4)
-			end = text_getnum(last, 'LLL').zfill(3)
+			start = text_getnum(first, 'FFFF')
+			end = text_getnum(last, 'LLL')
+		else:
+			start = ss + start.zfill(3)
+			end = end.zfill(3) if end else start[-3:]
 		
-	if not last: end = start
+	if end == 'LLL': end = start
 	
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 	
 def is_nf(list):
 	pattern = 'Neurosurg Focus'
@@ -510,11 +513,11 @@ def is_nf(list):
 def nf_process(first, last):
 	title = text_gettitle(first)
 	
-	start = text_getnum(first, 'FFFF').zfill(4)
+	start = text_getnum(first, 'FFFF')
 	
-	end = text_getnum(last, 'LLL').zfill(3)
+	end = text_getnum(last, 'LLL')
 
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_surg(list):
 	pattern = 'Surg Neurol'
@@ -534,10 +537,10 @@ def surg_process(first, last):
 		if pattern in p[0]:
 			mg = digit.findall(p[0].translate(None, ' '))
 			if len(mg) >= 4:
-				start, end = mg[-2].zfill(4), str(int(mg[-2])+int(mg[-1])).zfill(3)
+				start, end = mg[-2], str(int(mg[-2])+int(mg[-1]))
 			break
 	
-	return '%s-%s.%s.pdf'%(start, end[-3:], title)
+	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def run_test():
 	names = []
