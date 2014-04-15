@@ -438,9 +438,24 @@ def is_neurosurg(list):
 def neurosurg_process(first, last):
 	title = text_gettitle(first)
 	
-	start = text_getnum(first, 'FFFF')
+	pattern = re.compile(r'J Neurosurg \d+')
+	digit = re.compile(r'J Neurosurg \d+.*?(\d+).*?(\d+),')
+	start, end = 'FFFF', 'LLL'
+	s, h = None, None
+	for p in first:
+		if h:
+			if abs(h-p[3]) < 2:
+				s += p[0]
+		else:
+			mg = pattern.search(p[0])
+			if mg: s, h = p[0], p[3]
 	
-	end = text_getnum(last, 'LLL')
+	if s:
+		mg = digit.search(s)
+		if mg: start, end = mg.group(1), mg.group(2)
+	else:
+		start = text_getnum(first, 'FFFF')
+		end = text_getnum(last, 'LLL')
 	
 	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
@@ -484,7 +499,7 @@ def neurosurgery_process(first, last):
 	def nedigit(list):
 		ne = re.compile(r'([N|E])(\d+)')
 		for p in sorted(list, key=lambda l : l[3], reverse=True):
-			mg = ne.search(p[0])
+			mg = ne.match(p[0])
 			if mg: return mg.group(1), mg.group(2)
 		return None, None
 		
@@ -547,7 +562,7 @@ def run_test():
 	path = r'C:\Users\jzhang\Downloads'
 	test = path + r'\run_test'
 	if os.path.exists(test):
-		for i in range(9, 10):
+		for i in range(16, 17):
 			p = path + r'\input' + str(i)
 			if os.path.exists(p):
 				names += folder_process(p, p+'_O', True)
