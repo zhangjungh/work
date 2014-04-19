@@ -222,12 +222,13 @@ def text_gettitle(list, h1=0, h2=900, exclude=(), ss=None):
 	
 	return title
 			
-def text_getnum(list, default, footer=True):
-	r = -20 if footer else 20
+def text_getnum(list, default, footer=True, h1=None, h2=None):
 	l = sorted(list, key=lambda l : l[3], reverse=footer)
+	
 	lc, top, num = [], -1, default
 	for i in l:
-		if top != -1 and i[3] < top+r:
+		if h1 and h2 and (i[3] < h1 or i[3] > h2): continue
+		if top != -1 and abs(i[3]-top) > 20:
 			break
 		if i[0].isdigit():
 			if top == -1: top = i[3]
@@ -331,35 +332,59 @@ def semss_process(first, last):
 	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_clineuro(list):
-	pattern = 'j.clineuro'#[[0, 'Clinical Neurology and Neurosurgery'], [0, 'j.clineuro']]
+	pattern = [[0, 'Clinical Neurology and Neurosurgery'], [0, 'j.clineuro']]
 	for p in list:
-		if pattern in p[0].lower():
-			print(pattern)
-			return True
+		for i in pattern:
+			if i[1] in p[0]:
+				print(i[1])
+				return True
 	return False	
 
 def clineuro_process(first, last):
-	pattern = 'c l i n e u r o'
-	h1, h2 = 0, 300
-	for p in first:
-		if pattern in p[0]:
-			h1 = p[3]
-			break
-	title = text_gettitle(first, h1, h2)
+	title = text_gettitle(first, exclude=('Clinical Neurology and Neurosurgery'))
 
-	nc = []
-	digit = re.compile(r'(\d+)')
+	#s number
+	def sdigit(list):
+		ne = re.compile(r'(S\d+)')
+		for p in sorted(list, key=lambda l : l[3], reverse=True):
+			mg = ne.match(p[0])
+			if mg: return mg.group(1)
+		return None
+		
+	pattern = 'Clinical'
+	digit = re.compile(r'Neurosurgery.*?(\d+).*?(\d+).*?(S?\d+)(.*?)(S?\d+)')
 	start, end = 'FFFF', 'LLL'
+	s, h = None, None
 	for p in first:
-		if p[3] < h1:
-			mg = digit.findall(p[0])
-			if mg: nc += mg
-	if len(nc) >= 2:
-		start, end = nc[-2], nc[-1]
+		if h:
+			if abs(h-p[3]) < 2:
+				s += p[0]
+		elif pattern in p[0]: 
+			s, h = p[0], p[3]
+	if s:
+		mg = digit.search(s)
+		if mg:
+			start, end = mg.group(3), mg.group(5)
+			if not mg.group(4): start += end
+			if start[0] == 'S':
+				t1, t2 = sdigit(first), sdigit(last)
+				if t1 and t1 != start and t1 != end: start = t1
+				if t2 and t2 != start and t2 != end: end = t2
+			else:
+				tmp = text_getnum(first, 'FFFF', False, h-5, h+5)
+				if tmp != 'FFFF' and tmp != start and tmp != end: start = tmp
 	
 	if start == 'FFFF':
-		start = text_getnum(first, start, False)
-		end = text_getnum(last, end, False)
+		start, end = sdigit(first), sdigit(last)
+		if not start:
+			start = text_getnum(first, start, False)
+			end = text_getnum(last, end, False)			
+	
+	if start[0] == 'S':
+		start = 'S' + start[1:].zfill(3)
+		end = end[1:] if end else start[-3:]
+		
+	if not last: end = start
 		
 	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
@@ -377,7 +402,6 @@ def wneu_process(first, last):
 	digit = re.compile(r':e?(\d+).*?(\d+)[.]')
 	start, end = 'FFFF', 'LLL'
 	pattern = 'World Neurosurg'
-	nc = []
 	for p in first:
 		if pattern in p[0]:
 			mg = digit.search(p[0])
@@ -562,7 +586,7 @@ def run_test():
 	path = r'C:\Users\jzhang\Downloads'
 	test = path + r'\run_test'
 	if os.path.exists(test):
-		for i in range(16, 17):
+		for i in range(18, 19):
 			p = path + r'\input' + str(i)
 			if os.path.exists(p):
 				names += folder_process(p, p+'_O', True)
