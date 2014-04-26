@@ -222,12 +222,13 @@ def text_gettitle(list, h1=0, h2=900, exclude=(), ss=None):
 	
 	return title
 			
-def text_getnum(list, default, footer=True, h1=None, h2=None):
+def text_getnum(list, default, footer=True, h1=None, h2=None, el=None, er=None):
 	l = sorted(list, key=lambda l : l[3], reverse=footer)
 	
 	lc, top, num = [], -1, default
 	for i in l:
 		if h1 and h2 and (i[3] < h1 or i[3] > h2): continue
+		if el and er and (i[2] >= el and i[2] <= er): continue
 		if top != -1 and abs(i[3]-top) > 20:
 			break
 		if i[0].isdigit():
@@ -355,12 +356,14 @@ def clineuro_process(first, last):
 	digit = re.compile(r'Neurosurgery.*?(\d+).*?(\d+).*?(S?\d+)(.*?)(S?\d+)')
 	start, end = 'FFFF', 'LLL'
 	s, h = None, None
+	l, r = None, None
 	for p in first:
 		if h:
 			if abs(h-p[3]) < 2:
 				s += p[0]
+				r = p[2]
 		elif pattern in p[0]: 
-			s, h = p[0], p[3]
+			s, l, h = p[0], p[2], p[3]
 	if s:
 		mg = digit.search(s)
 		if mg:
@@ -371,7 +374,7 @@ def clineuro_process(first, last):
 				if t1 and t1 != start and t1 != end: start = t1
 				if t2 and t2 != start and t2 != end: end = t2
 			else:
-				tmp = text_getnum(first, 'FFFF', False, h-5, h+5)
+				tmp = text_getnum(first, 'FFFF', False, h-5, h+5, l, r)
 				if tmp != 'FFFF' and tmp != start and tmp != end: start = tmp
 	
 	if start == 'FFFF':
@@ -586,7 +589,7 @@ def run_test():
 	path = r'C:\Users\jzhang\Downloads'
 	test = path + r'\run_test'
 	if os.path.exists(test):
-		for i in range(18, 19):
+		for i in range(21, 22):
 			p = path + r'\input' + str(i)
 			if os.path.exists(p):
 				names += folder_process(p, p+'_O', True)
