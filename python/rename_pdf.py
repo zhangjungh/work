@@ -219,6 +219,8 @@ def text_gettitle(list, h1=0, h2=900, exclude=(), ss=None):
 	
 	#get valid title:
 	title = re.sub(r'[\/:*?"<>|]', '--', title)
+	#filter out non-ascii characters
+	title = ''.join([i for i in title if ord(i) < 127])
 	
 	return title
 			
