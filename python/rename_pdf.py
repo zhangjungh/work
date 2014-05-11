@@ -47,7 +47,7 @@ def folder_process(idir, odir, reserve=False):
 				try:
 					path = os.path.join(root, file)
 					outfile = pdf_process(path, reserve)
-					if len(outfile) > 255: outfile = outfile[:64]+'.pdf'
+					if len(outfile) > 172: outfile = outfile[:64]+'.pdf'
 					names.append(outfile)
 					print('copy from %s to %s' % (file.encode('utf-8'), outfile))
 					npath = os.path.join(odir, root[len(idir)+1:])
@@ -242,6 +242,18 @@ def text_getnum(list, default, footer=True, h1=None, h2=None, el=None, er=None):
 			edge = abs(i[2]-300)
 			num = i[0]			
 	return num
+
+def text_getlinebypattern(list, pattern, r=2):
+	s, h = None, None
+	for i in list:
+		if pattern in i[0]:
+			s, h = '', i[3]
+			break	
+	if h:
+		for i in list:
+			if abs(h-i[3]) < r:
+				s += (' ' + i[0])
+	return s
 	
 def general_process(first, last):
 	title = text_gettitle(first)
@@ -355,28 +367,24 @@ def clineuro_process(first, last):
 		return None
 		
 	pattern = 'Clinical'
-	digit = re.compile(r'Neurosurgery.*?(\d+).*?(\d+).*?(S?\d+)(.*?)(S?\d+)')
+	digit = re.compile(r'(.*)Neurosurgery.*?(\d+).*?(\d+).*?(S?\d+)(.*?)(S?\d+)(.*)')
 	start, end = 'FFFF', 'LLL'
-	s, h = None, None
-	l, r = None, None
-	for p in first:
-		if h:
-			if abs(h-p[3]) < 2:
-				s += p[0]
-				r = p[2]
-		elif pattern in p[0]: 
-			s, l, h = p[0], p[2], p[3]
+	s = text_getlinebypattern(first, pattern)
 	if s:
-		mg = digit.search(s)
+		mg = digit.match(s)
 		if mg:
-			start, end = mg.group(3), mg.group(5)
-			if not mg.group(4): start += end
+			start, end = mg.group(4), mg.group(6)
+			if not mg.group(5): start += end
 			if start[0] == 'S':
 				t1, t2 = sdigit(first), sdigit(last)
 				if t1 and t1 != start and t1 != end: start = t1
 				if t2 and t2 != start and t2 != end: end = t2
 			else:
-				tmp = text_getnum(first, 'FFFF', False, h-5, h+5, l, r)
+				ll = mg.group(1).split()
+				rl = mg.group(7).split()
+				tmp = 'FFFF'
+				if ll and ll[0].isdigit(): tmp = ll[0]
+				elif rl and rl[0].isdigit(): tmp = rl[0]
 				if tmp != 'FFFF' and tmp != start and tmp != end: start = tmp
 	
 	if start == 'FFFF':
@@ -507,9 +515,9 @@ def cn_process(first, last):
 	
 def is_neurosurgery(list):
 	pattern = 'neurosurgery-online'
-	ptstart = 'neurosurgery'
+	ptother = 'NEUROSURGERY'
 	for p in list:
-		if pattern in p[0] or p[0].lower().startswith(ptstart) or p[0] == 'Table of Contents by Topic':
+		if pattern in p[0] or ptother == p[0] or p[0] == 'Table of Contents by Topic':
 			print(pattern)
 			return True
 	return False
@@ -564,26 +572,36 @@ def nf_process(first, last):
 	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def is_surg(list):
-	pattern = 'Surg Neurol'
+	pattern = [[0, 'Surg Neurol'], [0, 'Surgical Neurology']]
 	for p in list:
-		if pattern in p[0]:
-			print(pattern)
-			return True
+		for i in pattern:
+			if i[1] in p[0]:
+				print(i[1])
+				return True
 	return False
 
 def surg_process(first, last):
 	title = text_gettitle(first)
-	
-	digit = re.compile(r'(\d+)')
+
+	pattern = 'Surgical Neurology'
+	digit = re.compile(r'Surgical Neurology.*?(\d+).*?(\d+).*?(\d+).*?(\d+)')
 	start, end = 'FFFF', 'LLL'
-	pattern = 'Surg Neurol'
-	for p in first:
-		if pattern in p[0]:
-			mg = digit.findall(p[0].translate(None, ' '))
-			if len(mg) >= 4:
-				start, end = mg[-2], str(int(mg[-2])+int(mg[-1]))
-			break
-	
+	s = text_getlinebypattern(first, pattern) 
+	if s:
+		mg = digit.search(s)
+		if mg: start, end = mg.group(3), mg.group(4)
+		
+	if start == 'FFFF':	
+		digit = re.compile(r'(\d+)')
+		pattern = 'Surg Neurol'
+		for p in first:
+			if pattern in p[0]:
+				print p[0]
+				mg = digit.findall(p[0].translate(None, ' '))
+				if len(mg) >= 4:
+					start, end = mg[-2], str(int(mg[-2])+int(mg[-1]))
+				break
+		
 	return '%s-%s.%s.pdf'%(start.zfill(4), end.zfill(3)[-3:], title)
 
 def run_test():
