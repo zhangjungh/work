@@ -15,12 +15,24 @@ public class Main {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		for (Player p : SampleData.getPlayers())
-		{
-			System.out.printf("%f %s, [%d, %d]\n", p.getRank(), p.getName(), p.getWins(), p.getLosses());
+		
+		Matchmaker mm = new MatchmakerImpl(); 
+		while ( mm.getTotalMatches() < 100 ) {
+			Player p = SampleData.spawnPlayer();		
+			long curTime = System.nanoTime();
+			if (p != null) {
+				int playersPerTeam = Math.random() > 0.6 ? 3 : 5;
+				mm.enterMatchmaking(playersPerTeam, p);	
+			}
+			mm.updateMatchList(curTime);
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
-		  
+		
 		try {
 			parseConfigs();
 			//writeFile();

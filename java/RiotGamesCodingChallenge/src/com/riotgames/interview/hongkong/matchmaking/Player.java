@@ -25,7 +25,7 @@ public class Player {
         this.name = name;
         this.wins = wins;
         this.losses = losses;
-        //calculate a Elo rank if not sets
+        //calculate the Elo rank if not sets
         this.rank = INIT_RANK + (getWinRate() - 0.5) * RANGE;       
     }
 

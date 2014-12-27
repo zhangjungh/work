@@ -9,15 +9,26 @@ public interface Matchmaker {
      * 
      * @param playersPerTeam
      *            the number of players required in each team
+     * @param player
+     *            the player
      * @return an appropriate match or null if there is no appropriate match
      */
-    Match findMatch(int playersPerTeam);
+    Match findMatch(int playersPerTeam, Player player);
 
     /**
      * <p>
-     * Add a player for matching.
+     * Add a player with number per team for matching.
      * </p>
      */
-    void enterMatchmaking(Player player);
+    void enterMatchmaking(int playersPerTeam, Player player);
+
+    /**
+     * <p>
+     * Update all matches
+     * </p>
+     */    
+    void updateMatchList(long curTime);
+    
+    long getTotalMatches();
 
 }
