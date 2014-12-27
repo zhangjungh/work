@@ -8,11 +8,8 @@ public class SampleData {
 	static private ReadWriteLock s_rwl = new ReentrantReadWriteLock(); 
 	static private LinkedList<Player> s_players = new LinkedList<Player>();
 
-    public static void initPlayerData() throws IOException {
-    	if (!s_players.isEmpty())
-    		return;
-    	
-        FileReader fr = new FileReader("playerdata.txt");
+    private static void readFile(String filename) throws IOException {  	
+        FileReader fr = new FileReader(filename);
         BufferedReader br = new BufferedReader(fr);
         String line;
         while ((line=br.readLine()) != null) 
@@ -29,6 +26,37 @@ public class SampleData {
         }
         br.close();
         fr.close();
+    }
+    
+    public static void initPlayerData() {
+    	if (!s_players.isEmpty())
+    		return;
+    	
+    	try {
+			readFile("playerdata.txt");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
+    private static void writeFile(String filename) throws IOException {
+        FileWriter fw = new FileWriter(new File(filename));
+        BufferedWriter bw = new BufferedWriter(fw);
+        for (Player p : s_players) {
+            bw.write(p.getName() + "," + p.getWins() + "," + p.getLosses() + "," + p.getRank() + "\n");
+        }
+        bw.close();
+        fw.close();
+    }   
+    
+    public static void writePlayerData() {
+    	try {
+			writeFile("newPlayerData.txt");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 	
     public static List<Player> getPlayers() {

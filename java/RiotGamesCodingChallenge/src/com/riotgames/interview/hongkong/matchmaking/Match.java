@@ -25,6 +25,10 @@ public class Match {
     	MAX_MATCH_ID += 1;
     	this.matchID = MAX_MATCH_ID;
     }
+    
+    public static int getTotalMatches() {
+    	return MAX_MATCH_ID;
+    }
 
     public Set<Player> getTeam1() {
         return team1;
@@ -126,11 +130,26 @@ public class Match {
 		status = MatchStatus.END;
 	}
 	
+	public void matchTerminate() {
+    	if (team1.size() + team2.size() >= (playersPerTeam * 2))
+    	{
+    		matchEnd();
+    	}
+    	else
+    	{
+			System.out.printf("Match %4d force termianted\n",  matchID);
+			
+			SampleData.putPlayersToPool(team1);
+			SampleData.putPlayersToPool(team2);
+			
+			status = MatchStatus.END;
+    	}
+	}
+	
 	public void matchStart(long st) {
+		System.out.printf("Match %4d started, numbers %2d, win rate %f\n",  matchID, playersPerTeam*2, getRate(getTeam1Rank(), getTeam2Rank()));
 		status = MatchStatus.START;
-		startTime = st;
-		
-		System.out.printf("Match %4d started: %2d, balancing rate %f\n",  matchID, playersPerTeam*2, getRate(getTeam1Rank(), getTeam2Rank()));
+		startTime = st;		
 	}
 	
 	public void matchUpdate(long curTime) {

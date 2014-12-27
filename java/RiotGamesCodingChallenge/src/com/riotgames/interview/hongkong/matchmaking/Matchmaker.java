@@ -24,11 +24,15 @@ public interface Matchmaker {
 
     /**
      * <p>
-     * Update all matches
+     * Update all matches to set start or end status
      * </p>
      */    
     void updateMatchList(long curTime);
-    
-    long getTotalMatches();
 
+    /**
+     * <p>
+     * terminate all unfinished matches and waiting matches
+     * </p>
+     */        
+    void terminateMatches();
 }

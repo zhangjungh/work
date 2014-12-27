@@ -9,38 +9,30 @@ public class Main {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		try {
-			SampleData.initPlayerData();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+		SampleData.initPlayerData();
+
 		Matchmaker mm = new MatchmakerImpl(); 
-		while ( mm.getTotalMatches() < 100 ) {
+		while ( Match.getTotalMatches() < 100 ) {
 			Player p = SampleData.spawnPlayer();		
 			long curTime = System.nanoTime();
 			if (p != null) {
 				int playersPerTeam = Math.random() > 0.6 ? 3 : 5;
 				mm.enterMatchmaking(playersPerTeam, p);	
 			}
-			mm.updateMatchList(curTime);
 			try {
 				Thread.sleep(50);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
+			}			
+			mm.updateMatchList(curTime);
 		}
 		
-		try {
-			parseConfigs();
-			//writeFile();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		  
+		mm.terminateMatches();
+		
+		SampleData.writePlayerData();
+		
+		System.out.println("program terminated " + SampleData.getPlayers().size());  
 	}
 	
     public static void parseConfigs() throws IOException {
@@ -56,22 +48,5 @@ public class Main {
         fr.close();
     }
     
-    public static void writeFile() throws IOException {
-        String[] arrs={
-            "zhangsan,23,FuJian",
-            "lisi,30,ShangHai",
-            "wangwu,43,BeiJing",
-            "laolin,21,ChongQing",
-            "ximenqing,67,GuiZhou"
-        };
-        FileWriter fw = new FileWriter(new File("write.txt"));
-        BufferedWriter bw = new BufferedWriter(fw);
 
-        for (String arr:arrs)
-        {
-            bw.write(arr+"\t\n");
-        }
-        bw.close();
-        fw.close();
-    }   
 }
