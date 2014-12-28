@@ -45,7 +45,7 @@ public class Match {
     
     private double getTeam1Rank() {
     	if (team1.isEmpty())
-    		return Config.getInitRank();
+    		return 0.0;//Config.getInitRank();
     	
     	double r = 0.0;
     	for (Player p : team1)
@@ -55,7 +55,7 @@ public class Match {
     
     private double getTeam2Rank() {
     	if (team2.isEmpty())
-    		return Config.getInitRank();
+    		return 0.0;//Config.getInitRank();
     	
     	double r = 0.0;
     	for (Player p : team2)
@@ -63,19 +63,24 @@ public class Match {
     	return r / team2.size();    	
     }
     
-    public boolean balancingEvaluate(Player p) {
-    	double pr = p.getRank();
-    	double r1 = getTeam1Rank();
-    	double r2 = getTeam2Rank();
+    public double getPlayerVsTeamBalanceDiff(Player player) {
+    	double pr = player.getRank();
     	
-    	double p1 = getRate(pr, r1);
-    	double p2 = getRate(pr, r2);
+    	double r = 0.0;
+    	for (Player p : team1)
+    		r += p.getRank();   	
+    	for (Player p : team2)
+    		r += p.getRank();
+    	if (r > 0.0)
+    		r /= (team1.size() + team2.size());
     	
-    	if ( (p1 > Config.getLowRate() && p1 < Config.getHighRate()) || (p2 > Config.getLowRate() && p2 < Config.getHighRate()) )
-    		return true;
-    	
-    	return false;
+    	return getRate(pr, r);
     }
+
+    public boolean isPlayerFitWithMatch(Player p) {
+    	double d = getPlayerVsTeamBalanceDiff(p);
+    	return (d > Config.getLowRate() && d < Config.getHighRate());
+    }    
     
     public boolean isMatchWaitTooLong(long curTime) {
     	return (curTime - waitTime) > Config.getMaxWaitTime();

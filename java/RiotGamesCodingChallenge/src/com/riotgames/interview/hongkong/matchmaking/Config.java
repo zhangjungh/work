@@ -24,9 +24,9 @@ public class Config {
             if (arr.length == 2)
             {
             	if (arr[0].equals("highrate"))
-            		HIGHRATE = new Double(arr[1].trim()); 
+            		HIGHRATE = Math.max(Math.min(new Double(arr[1].trim()), 1.0), 0.5);
             	else if (arr[0].equals("lowrate"))
-            		LOWRATE  = new Double(arr[1].trim());
+            		LOWRATE = Math.min(Math.max(new Double(arr[1].trim()), 0.0), 0.5);
             	else if (arr[0].equals("k"))
             		K = new Integer(arr[1].trim());
             	else if (arr[0].equals("timeoutrate"))

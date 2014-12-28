@@ -11,15 +11,28 @@ public class MatchmakerImpl implements Matchmaker {
 	
     public Match findMatch(int playersPerTeam, Player player, long curTime) {
     	for (Match m : matchList) {
-			if (m.isMatchAvailable(playersPerTeam) && m.balancingEvaluate(player)) {
-        		return m;
-        	}
-        }        
-    	for (Match m : matchList) {
-        	if (m.isMatchAvailable(playersPerTeam) && m.isMatchWaitTooLong(curTime)) {
-        		return m;
+			if (m.isMatchAvailable(playersPerTeam) && m.isPlayerFitWithMatch(player)) {
+				return m;
         	}
         }
+    	double dmin = 1.0;
+    	Match mmin = null;
+    	for (Match m : matchList) {
+        	if (m.isMatchAvailable(playersPerTeam) && m.isMatchWaitTooLong(curTime)) {
+        		double d = m.getPlayerVsTeamBalanceDiff(player);
+        		if (Math.abs(d - 0.5) < Math.abs(dmin - 0.5)) {
+        			dmin = d;
+        			mmin = m;
+        		}
+        	}
+        }
+    	if (mmin != null) {
+    		double high = Config.getHighRate() + Config.getTimeoutRate();
+    		double low = Config.getLowRate() - Config.getTimeoutRate();
+    		if (dmin > low && dmin < high)
+    			return mmin;
+    	}
+    	
         return null;
     }
 
