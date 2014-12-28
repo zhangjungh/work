@@ -27,7 +27,7 @@ public class Main {
 		mm.terminateMatches();	
 		SampleData.writePlayerData();
 		
-		System.out.println("program terminated " + SampleData.getPlayers().size());  
+		System.out.println("matchmaking finished!");  
 	} 
 
 }

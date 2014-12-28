@@ -5,6 +5,9 @@ import java.util.*;
 import java.util.concurrent.locks.*;
 
 public class SampleData {
+	static private final String ORIGINAL_FILE = "playerdata.txt";
+	static private final String ORI_RANK_FILE = "PlayerDataRank.txt";
+	static private final String NEW_RANK_FILE = "NewPlayerDataRank.txt";
 	static private ReadWriteLock s_rwl = new ReentrantReadWriteLock(); 
 	static private LinkedList<Player> s_players = new LinkedList<Player>();
     
@@ -40,10 +43,15 @@ public class SampleData {
     		return;
     	
     	try {
-			readFile("playerdata.txt");
-			Collections.sort(s_players, new PlayerComparator());
-			writeFile("PlayerDataRank.txt");
-			
+    		File f = new File(NEW_RANK_FILE);
+    		if (f.exists()) {
+    			readFile(NEW_RANK_FILE);
+    		}
+    		else {
+    			readFile(ORIGINAL_FILE);
+    			Collections.sort(s_players, new PlayerComparator());
+    			writeFile(ORI_RANK_FILE);	
+    		}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -63,7 +71,7 @@ public class SampleData {
     public static void writePlayerData() {
     	try {
     		Collections.sort(s_players, new PlayerComparator());
-			writeFile("NewPlayerDataRank.txt");
+			writeFile(NEW_RANK_FILE);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
