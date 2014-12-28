@@ -7,7 +7,14 @@ import java.util.concurrent.locks.*;
 public class SampleData {
 	static private ReadWriteLock s_rwl = new ReentrantReadWriteLock(); 
 	static private LinkedList<Player> s_players = new LinkedList<Player>();
-
+    
+	public static class PlayerComparator implements Comparator<Player> {
+  	  @Override
+  	  public int compare(Player p1, Player p2) {
+  		  return p1.getName().compareTo(p2.getName());
+  	  }
+    }
+    
     private static void readFile(String filename) throws IOException {  	
         FileReader fr = new FileReader(filename);
         BufferedReader br = new BufferedReader(fr);
@@ -34,6 +41,9 @@ public class SampleData {
     	
     	try {
 			readFile("playerdata.txt");
+			Collections.sort(s_players, new PlayerComparator());
+			writeFile("PlayerDataRank.txt");
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -44,7 +54,7 @@ public class SampleData {
         FileWriter fw = new FileWriter(new File(filename));
         BufferedWriter bw = new BufferedWriter(fw);
         for (Player p : s_players) {
-            bw.write(p.getName() + "," + p.getWins() + "," + p.getLosses() + "," + p.getRank() + "\n");
+            bw.write(p.getName() + ", " + p.getWins() + ", " + p.getLosses() + ", " + String.format("%.2f", p.getRank()) + "\n");
         }
         bw.close();
         fw.close();
@@ -52,7 +62,8 @@ public class SampleData {
     
     public static void writePlayerData() {
     	try {
-			writeFile("newPlayerData.txt");
+    		Collections.sort(s_players, new PlayerComparator());
+			writeFile("NewPlayerDataRank.txt");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -85,6 +96,6 @@ public class SampleData {
     	} finally {
         	s_rwl.writeLock().unlock();
     	}
-    }
+    } 
 
 }

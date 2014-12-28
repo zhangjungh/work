@@ -14,8 +14,6 @@ package com.riotgames.interview.hongkong.matchmaking;
  * </p>
  */
 public class Player {
-	private static final double INIT_RANK = 1400; //default Elo rank 
-	private static final double RANGE = 800; //rank adjustment range
     private final String name;
     private long wins;
     private long losses;
@@ -26,7 +24,7 @@ public class Player {
         this.wins = wins;
         this.losses = losses;
         //calculate the Elo rank if not sets
-        this.rank = INIT_RANK + (getWinRate() - 0.5) * RANGE;       
+        this.rank = Config.getInitRank() + (getWinRate() - 0.5) * Config.getRange();       
     }
 
     public Player(String name, long wins, long losses, double rank) {

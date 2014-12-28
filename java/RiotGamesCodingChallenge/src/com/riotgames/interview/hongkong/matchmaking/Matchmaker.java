@@ -13,14 +13,14 @@ public interface Matchmaker {
      *            the player
      * @return an appropriate match or null if there is no appropriate match
      */
-    Match findMatch(int playersPerTeam, Player player);
+    Match findMatch(int playersPerTeam, Player player, long curTime);
 
     /**
      * <p>
      * Add a player with number per team for matching.
      * </p>
      */
-    void enterMatchmaking(int playersPerTeam, Player player);
+    void enterMatchmaking(int playersPerTeam, Player player, long curTime);
 
     /**
      * <p>

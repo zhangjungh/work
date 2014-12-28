@@ -9,22 +9,27 @@ import java.util.LinkedList;
 public class MatchmakerImpl implements Matchmaker {
 	private LinkedList<Match> matchList = new LinkedList<Match>();
 	
-    public Match findMatch(int playersPerTeam, Player player) {
-        for (Match m : matchList) {
-        	if (m.isMatchAvailable(playersPerTeam) && m.balancingEvaluate(player)) {
+    public Match findMatch(int playersPerTeam, Player player, long curTime) {
+    	for (Match m : matchList) {
+			if (m.isMatchAvailable(playersPerTeam) && m.balancingEvaluate(player)) {
+        		return m;
+        	}
+        }        
+    	for (Match m : matchList) {
+        	if (m.isMatchAvailable(playersPerTeam) && m.isMatchWaitTooLong(curTime)) {
         		return m;
         	}
         }
         return null;
     }
 
-    public void enterMatchmaking(int playersPerTeam, Player player) {
-        Match m = findMatch(playersPerTeam, player);
+    public void enterMatchmaking(int playersPerTeam, Player player, long curTime) {
+        Match m = findMatch(playersPerTeam, player, curTime);
         if (m == null) {
         	m = new Match(playersPerTeam);
         	matchList.add(m);
         }
-        m.addPlayerToTeam(player);
+		m.addPlayerToTeam(player, curTime);
     }
     
     public void updateMatchList(long curTime) {

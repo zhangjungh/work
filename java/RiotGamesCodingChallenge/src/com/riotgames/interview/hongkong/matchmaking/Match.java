@@ -4,13 +4,10 @@ import java.util.Set;
 import java.util.HashSet;
 
 public class Match {
-	private final static int K = 32;
-	private final static double HIGHRATE = 0.55;
-	private final static double LOWRATE = 0.45;
-	private final static long MATCH_DURATION = 1000 * 1000000L; //nanoseconds
 	private static int MAX_MATCH_ID = 0;
     enum MatchStatus{ WAITING, START, END }
     private MatchStatus status;
+    private long waitTime = 0;
     private long startTime = 0;
     private Set<Player> team1;
     private Set<Player> team2;
@@ -38,16 +35,17 @@ public class Match {
         return team2;
     }
     
-	public void addPlayerToTeam(Player p) {
+	public void addPlayerToTeam(Player p, long curTime) {
     	if (team1.size() <= team2.size())
     		team1.add(p);
     	else
     		team2.add(p);
+    	waitTime = curTime;
     }
     
-    public double getTeam1Rank() {
+    private double getTeam1Rank() {
     	if (team1.isEmpty())
-    		return 0.0;
+    		return Config.getInitRank();
     	
     	double r = 0.0;
     	for (Player p : team1)
@@ -55,9 +53,9 @@ public class Match {
     	return r / team1.size();
     }
     
-    public double getTeam2Rank() {
+    private double getTeam2Rank() {
     	if (team2.isEmpty())
-    		return 0.0;
+    		return Config.getInitRank();
     	
     	double r = 0.0;
     	for (Player p : team2)
@@ -73,10 +71,14 @@ public class Match {
     	double p1 = getRate(pr, r1);
     	double p2 = getRate(pr, r2);
     	
-    	if ( (p1 > LOWRATE && p1 < HIGHRATE) || (p2 > LOWRATE && p2 < HIGHRATE) )
+    	if ( (p1 > Config.getLowRate() && p1 < Config.getHighRate()) || (p2 > Config.getLowRate() && p2 < Config.getHighRate()) )
     		return true;
     	
     	return false;
+    }
+    
+    public boolean isMatchWaitTooLong(long curTime) {
+    	return (curTime - waitTime) > Config.getMaxWaitTime();
     }
     
     public void setMatchResult(int winTeam, double team1Rank, double team2Rank) {
@@ -98,15 +100,18 @@ public class Match {
     	}
     }
 
-	public static double getRate(double r1, double r2) {
+    // Elo formula to get the win rate with known rank
+    // 1 / (1 + pow(10, (rb-ra) / 400))
+	private static double getRate(double r1, double r2) {
 		double e = (r2 - r1) / 400.0;
 		double r = 1 + Math.pow(10, e);
 		return 1.0 / r;
 	}
 	
-	public static double getDeltaRank(double r1, double r2) {
+	// Elo formula to add delta rank after a match (only consider win and lose)
+	private static double getDeltaRank(double r1, double r2) {
 		double rate = getRate(r1, r2);
-		return (1 - rate) * K;
+		return (1 - rate) * Config.getK();
 	}
 	
 	public void matchEnd() {
@@ -120,7 +125,7 @@ public class Match {
 		else
 			winTeam = (r1 > r2) ? 1 : 2;
 
-		System.out.printf("Match %4d ended, team %2d win\n",  matchID, winTeam);
+		System.out.printf("Match %3d ended, team %1d win\n",  matchID, winTeam);
 		
 		setMatchResult(winTeam, r1, r2);
 		
@@ -137,7 +142,7 @@ public class Match {
     	}
     	else
     	{
-			System.out.printf("Match %4d force termianted\n",  matchID);
+			System.out.printf("Match %3d force termianted\n",  matchID);
 			
 			SampleData.putPlayersToPool(team1);
 			SampleData.putPlayersToPool(team2);
@@ -147,7 +152,7 @@ public class Match {
 	}
 	
 	public void matchStart(long st) {
-		System.out.printf("Match %4d started, numbers %2d, win rate %f\n",  matchID, playersPerTeam*2, getRate(getTeam1Rank(), getTeam2Rank()));
+		System.out.printf("Match %3d started, players %2d, win rate %f\n",  matchID, playersPerTeam*2, getRate(getTeam1Rank(), getTeam2Rank()));
 		status = MatchStatus.START;
 		startTime = st;		
 	}
@@ -159,7 +164,7 @@ public class Match {
 	    	}
 		}
 		else if (status == MatchStatus.START) {
-			if (curTime - startTime >= MATCH_DURATION) {
+			if (curTime - startTime >= Config.getMatchDuration()) {
 				matchEnd();
 			}			
 		}		
